@@ -1,135 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veadik SmartGo</title>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      text-align: center;
-      margin-top: 100px;
-      background-color: #f4f6f9;
-    }
-    h1 {
-      color: #333;
-      font-size: 28px;
-      margin-bottom: 0;
-    }
-    .subtext {
-      font-size: 16px;
-      color: #666;
-      margin-bottom: 40px;
-    }
-    .btn {
-      padding: 15px 30px;
-      font-size: 18px;
-      margin: 10px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: 0.3s ease-in-out;
-    }
-    .checkin {
-      background-color: #28a745;
-      color: white;
-    }
-    .checkin:hover {
-      background-color: #218838;
-    }
-    .checkout {
-      background-color: #dc3545;
-      color: white;
-    }
-    .checkout:hover {
-      background-color: #c82333;
-    }
-    #toast {
-      display: none;
-      position: fixed;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #fff;
-      border: 2px solid #28a745;
-      color: #28a745;
-      padding: 20px 30px;
-      font-size: 18px;
-      border-radius: 15px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      z-index: 9999;
-    }
-    #toast p {
-      margin: 10px 0;
-    }
-    footer {
-      position: fixed;
-      bottom: 20px;
-      width: 100%;
-      text-align: center;
-      font-size: 13px;
-      color: #888;
-    }
-  </style>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background-color: #f1f3f4;
+    text-align: center;
+    margin-top: 120px;
+  }
+  h1 {
+    font-size: 30px;
+    color: #333;
+  }
+  .btn {
+    background-color: #FFA726;
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  .btn:hover {
+    background-color: #28a745;
+  }
+  #log {
+    margin-top: 60px;
+    font-size: 15px;
+    color: #444;
+  }
+  #log h3 {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+  .log-card {
+    background-color: #ffffff;
+    margin: 10px auto;
+    padding: 12px 18px;
+    border-radius: 14px;
+    max-width: 400px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    text-align: left;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .name {
+    font-weight: bold;
+    flex: 1;
+  }
+  footer {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+  }
+</style>
+
+
 </head>
 <body>
 
 <h1>Welcome to <span style="color:#007bff;">Veadik SmartGo</span></h1>
-<div class="subtext">Attendance</div>
+<p>Attendance</p>
 
-<div id="buttons">
-  <button class="btn checkin" onclick="submitAttendance('🟢Check-In')">Check-In</button>
-  <button class="btn checkout" onclick="submitAttendance('🔴Check-Out')">Check-Out</button>
-</div>
+<button class="btn" onclick="window.open('https://script.google.com/macros/s/AKfycbzqTv2350PZjK-SA7dsFj_VybTCOkaa1QatN4KAzD_hRLL8DaTyHlUSr5ryYuw0DpHg0w/exec', '_blank')">
+  Allow Location & Mark Attendance
+</button>
 
-<div id="toast">
-  <p>✅ Attendance Recorded</p>
-  <p id="recordTime"></p>
-  <p>📌 Please close this tab</p>
-</div>
+<div id="log"></div>
 
-<footer>Powered by Veadik SmartGo • Secure & Smart Attendance</footer>
 
 <script>
-  function showToast(message) {
-    document.getElementById("buttons").style.display = "none";
-    const toast = document.getElementById("toast");
-    toast.innerHTML = `<p>${message}</p><p>📌 Please close this tab</p>`;
-    toast.style.display = "block";
+fetch("https://script.google.com/macros/s/AKfycbzJ_0TkDXSbtyGa61ywNkmYCMLU1lj8h-7KZqH5o5p315M8KiJAyTnsMqxiDRiGC9Hu/exec")
+  .then(res => res.json())
+  .then(data => {
+    const today = new Date().toISOString().slice(0, 10);
+    const logs = data.filter(r => r[2]?.includes(today));
 
-    setTimeout(() => {
-      window.close();
-    }, 3000);
-  }
+    const html = logs.map(r => {
+      const time = new Date(r[2]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      return `
+        <div class="log-card">
+          <div>📌</div>
+          <div class="name">${r[0]}</div>
+          <div>${r[1]} at ${time}</div>
+        </div>
+      `;
+    }).join("");
 
-  function submitAttendance(type) {
-    if (!navigator.geolocation) {
-      showToast("❌ Location not supported.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        const url = `https://script.google.com/macros/s/AKfycbwA008Qci6PRncTqEHg6RiDbLDGhx6HjkFUX3N0DJzW43kr7SxhWAqBOMxMxXKcn3Un/exec?type=${encodeURIComponent(type)}&lat=${lat}&lng=${lng}`;
-
-        // Open attendance marking in a hidden iframe to support mobile
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = url;
-        document.body.appendChild(iframe);
-
-        showToast(type === "🟢Check-In" ? "✅ Check-In Attempted" : "⛔ Check-Out Attempted");
-      },
-      (error) => {
-        showToast("❌ Location error. Please allow access.");
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  }
+    document.getElementById("log").innerHTML = `<h3>Today’s Log</h3>${html || '<p>No entries yet.</p>'}`;
+  })
+  .catch(() => {
+    document.getElementById("log").innerHTML = "<p>Error loading log data.</p>";
+  });
 </script>
+
 
 </body>
 </html>
